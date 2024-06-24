@@ -1,0 +1,50 @@
+#version 450
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) buffer InputBuffer {
+    vec4 inputImage[];
+};
+
+layout(set = 0, binding = 2) buffer OutputBuffer {
+    vec4 outputImage[];
+};
+
+const float PI = 3.1415926535897932384626433832795;
+
+// Gaussian function to calculate weights
+float gaussian(int x, int y, float kernelSize, float sigma) {
+    int radius = int(kernelSize) / 2;
+    return exp(-(float(x * x + y * y)) / (2.0 * sigma * sigma)) / (2.0 * PI * sigma * sigma);
+}
+
+void main() {
+    ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
+    uint width = gl_NumWorkGroups.x * gl_WorkGroupSize.x;  // Replace with actual width of your image
+    uint height = gl_NumWorkGroups.y * gl_WorkGroupSize.y; // Replace with actual height of your image
+    float kernelSize = 10.0; // Adjust this according to the blur strength
+    float sigma = 20.0; // Adjust sigma (standard deviation) according to the blur strength
+
+    if (texelCoords.x < width && texelCoords.y < height) {
+        vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
+        float weightSum = 0.0;
+
+        int radius = int(kernelSize) / 2;
+
+        for (int i = -radius; i <= radius; ++i) {
+            for (int j = -radius; j <= radius; ++j) {
+                int px = texelCoords.x + j;
+                int py = texelCoords.y + i;
+
+                if (px >= 0 && px < width && py >= 0 && py < height) {
+                    uint index = py * width + px;
+                    float weight = gaussian(j, i, kernelSize, sigma);
+                    weightSum += weight;
+                    sum += inputImage[index] * weight;
+                }
+            }
+        }
+
+        outputImage[texelCoords.y * width + texelCoords.x] = sum / weightSum;
+    }
+}

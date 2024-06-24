@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.6)
+project(VulkanComputeProject)
+
+# Specify the path to the Android toolchain file
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/android.toolchain.cmake)
+
+# Set the Vulkan headers and libraries path from the NDK
+if (NOT DEFINED ENV{ANDROID_NDK_HOME})
+    message(FATAL_ERROR "ANDROID_NDK_HOME environment variable not set")
+endif()
+
+set(VULKAN_HEADERS $ENV{ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include)
+set(VULKAN_LIBS $ENV{ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/30)
+set(VULKAN_LIB $ENV{ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/30/libvulkan.so)
+
+# Pass these variables to the subdirectory
+add_subdirectory(src)
