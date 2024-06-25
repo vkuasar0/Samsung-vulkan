@@ -13,7 +13,7 @@ include_directories(${Vulkan_INCLUDE_DIR})
 
 set(ALL_LIBS  ${Vulkan_LIBRARY} )
 
-add_executable(vulkan_minimal_compute src/main.cpp)
+add_executable(vulkan_minimal_compute jni/main.cpp)
 
 set_target_properties(vulkan_minimal_compute PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}")
 
