@@ -1,50 +1,61 @@
 #version 450
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout (local_size_x = 16, local_size_y = 16) in;
 
-layout(set = 0, binding = 0) buffer InputBuffer {
-    vec4 inputImage[];
-};
+layout (binding = 0) buffer InputBuffer1 {
+    vec4 data[];
+} inputBuffer1;
 
-layout(set = 0, binding = 2) buffer OutputBuffer {
-    vec4 outputImage[];
-};
+layout (binding = 1) buffer InputBuffer2 {
+    vec4 data[];
+} inputBuffer2;
 
-const float PI = 3.1415926535897932384626433832795;
-
-// Gaussian function to calculate weights
-float gaussian(int x, int y, float kernelSize, float sigma) {
-    int radius = int(kernelSize) / 2;
-    return exp(-(float(x * x + y * y)) / (2.0 * sigma * sigma)) / (2.0 * PI * sigma * sigma);
-}
+layout (binding = 2) buffer OutputBuffer {
+    vec4 data[];
+} outputBuffer;
 
 void main() {
-    ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
-    uint width = gl_NumWorkGroups.x * gl_WorkGroupSize.x;  // Replace with actual width of your image
-    uint height = gl_NumWorkGroups.y * gl_WorkGroupSize.y; // Replace with actual height of your image
-    float kernelSize = 10.0; // Adjust this according to the blur strength
-    float sigma = 20.0; // Adjust sigma (standard deviation) according to the blur strength
+    const int kernelSize = 25; // Smaller kernel size
+    const float sigma = 0.1; // Smaller sigma
+    const float pi = 3.14159265;
+    const float blurSize = 10.0;
+    const int numBlurPixelsPerSide = (kernelSize - 1) / 2;
 
-    if (texelCoords.x < width && texelCoords.y < height) {
-        vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
-        float weightSum = 0.0;
+    ivec2 coords = ivec2(gl_GlobalInvocationID.xy);
+    int index = coords.y * 1024 + coords.x; // Assuming image width is 1024, adjust as needed
 
-        int radius = int(kernelSize) / 2;
-
-        for (int i = -radius; i <= radius; ++i) {
-            for (int j = -radius; j <= radius; ++j) {
-                int px = texelCoords.x + j;
-                int py = texelCoords.y + i;
-
-                if (px >= 0 && px < width && py >= 0 && py < height) {
-                    uint index = py * width + px;
-                    float weight = gaussian(j, i, kernelSize, sigma);
-                    weightSum += weight;
-                    sum += inputImage[index] * weight;
-                }
-            }
-        }
-
-        outputImage[texelCoords.y * width + texelCoords.x] = sum / weightSum;
+    // Calculate the Gaussian kernel
+    float kernel[kernelSize];
+    float sum = 0.0;
+    for (int i = 0; i < kernelSize; i++) {
+        float x = float(i - numBlurPixelsPerSide);
+        kernel[i] = exp(-0.5 * (x * x) / (sigma * sigma)) / (sigma * sqrt(2.0 * pi));
+        sum += kernel[i];
     }
+
+    // Normalize the kernel
+    for (int i = 0; i < kernelSize; i++) {
+        kernel[i] /= sum;
+    }
+
+    // Apply the Gaussian blur horizontally
+    vec3 avgValue = vec3(0.0);
+    for (int i = -numBlurPixelsPerSide; i <= numBlurPixelsPerSide; i++) {
+        int sampleIndex = index + i;
+        if (sampleIndex >= 0 && sampleIndex < 1024 * 1024) { // Adjust for bounds
+            avgValue += inputBuffer1.data[sampleIndex].rgb * kernel[i + numBlurPixelsPerSide];
+        }
+    }
+
+    // Apply the Gaussian blur vertically
+    vec3 blurredValue = vec3(0.0);
+    for (int i = -numBlurPixelsPerSide; i <= numBlurPixelsPerSide; i++) {
+        int sampleIndex = index + i * 1024; // Move vertically
+        if (sampleIndex >= 0 && sampleIndex < 1024 * 1024) { // Adjust for bounds
+            blurredValue += avgValue * kernel[i + numBlurPixelsPerSide];
+        }
+    }
+
+    // Write the blurred value to the output buffer
+    outputBuffer.data[index] = vec4(blurredValue, 1.0);
 }

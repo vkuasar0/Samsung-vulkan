@@ -445,8 +445,8 @@ public:
 
     void createAllBuffers()
     {
-        createTextureImage("image_add1.png", inBuffer1, inBufferMemory1, WIDTH, HEIGHT, CHANNELS);
-        createTextureImage("image_add2.png", inBuffer2, inBufferMemory2, WIDTH, HEIGHT, CHANNELS);
+        createTextureImage("../image_add2.png", inBuffer1, inBufferMemory1, WIDTH, HEIGHT, CHANNELS);
+        createTextureImage("../image_add1.png", inBuffer2, inBufferMemory2, WIDTH, HEIGHT, CHANNELS);
         size = WIDTH * HEIGHT * 4;
         createBuffer(size, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, outBuffer, outBufferMemory);
     }
@@ -485,7 +485,7 @@ public:
     void createComputePipeline()
     {
         uint32_t filelength;
-        uint32_t *code = readFile(filelength, "shaders/add.comp.spv");
+        uint32_t *code = readFile(filelength, "../shaders/compute.spv");
         VkShaderModuleCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.pCode = code;
