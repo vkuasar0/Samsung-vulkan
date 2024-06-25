@@ -14,4 +14,4 @@ set(VULKAN_LIBS $ENV{ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sys
 set(VULKAN_LIB $ENV{ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/30/libvulkan.so)
 
 # Pass these variables to the subdirectory
-add_subdirectory(src)
+add_subdirectory(jni)

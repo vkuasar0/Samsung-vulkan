@@ -8,7 +8,6 @@
 #include "stb/stb_image_write.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
-#include <dlfcn.h>
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -106,30 +105,6 @@ public:
 
     void createInstance()
     {
-        void *vulkanLibrary = dlopen("libvulkan.so", RTLD_NOW);
-        if (!vulkanLibrary)
-        {
-            fprintf(stderr, "Failed to load Vulkan library: %s\n", dlerror());
-            exit(1);
-        }
-
-        // Get vkGetInstanceProcAddr function pointer
-        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(dlsym(vulkanLibrary, "vkGetInstanceProcAddr"));
-        if (!vkGetInstanceProcAddr)
-        {
-            fprintf(stderr, "Failed to retrieve vkGetInstanceProcAddr function pointer\n");
-            dlclose(vulkanLibrary);
-            exit(1);
-        }
-
-        // Get vkCreateInstance function pointer
-        PFN_vkCreateInstance vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(vkGetInstanceProcAddr(nullptr, "vkCreateInstance"));
-        if (!vkCreateInstance)
-        {
-            fprintf(stderr, "Failed to retrieve vkCreateInstance function pointer\n");
-            dlclose(vulkanLibrary);
-            exit(1);
-        }
         std::vector<const char *> enabledExtensions;
         if (enableValidationLayers)
         {
