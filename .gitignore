@@ -7,3 +7,8 @@ Makefile
 **/CMakeFiles
 **/cmake_install.cmake
 **/Makefile
+libs
+obj
+vulkan_minimal_compute
+output
+report_vulkan.txt
