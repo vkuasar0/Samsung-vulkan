@@ -11,5 +11,5 @@ libs
 obj
 vulkan_minimal_compute
 output
-report_vulkan.txt
+report_vulkan.csv
 result.jpg

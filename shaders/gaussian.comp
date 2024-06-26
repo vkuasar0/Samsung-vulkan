@@ -1,61 +1,52 @@
 #version 450
 
 layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 0, rgba8) uniform readonly image2D inputImage;
+layout (binding = 2, rgba8) uniform image2D resultImage;
 
-layout (binding = 0) buffer InputBuffer1 {
-    vec4 data[];
-} inputBuffer1;
+// Separable Gaussian Blur based on: https://callumhay.blogspot.com/2010/09/gaussian-blur-shader-glsl.html
 
-layout (binding = 1) buffer InputBuffer2 {
-    vec4 data[];
-} inputBuffer2;
+void main()
+{   
+    const int kernelSize = 9;
 
-layout (binding = 2) buffer OutputBuffer {
-    vec4 data[];
-} outputBuffer;
+    float sigma = 3.0;
+	float blurSize = 1.0;
+	const float pi = 3.14159265f;
 
-void main() {
-    const int kernelSize = 25; // Smaller kernel size
-    const float sigma = 0.1; // Smaller sigma
-    const float pi = 3.14159265;
-    const float blurSize = 10.0;
-    const int numBlurPixelsPerSide = (kernelSize - 1) / 2;
+	const float numBlurPixelsPerSide = (kernelSize - 1)  /  2 * blurSize; 
 
-    ivec2 coords = ivec2(gl_GlobalInvocationID.xy);
-    int index = coords.y * 1024 + coords.x; // Assuming image width is 1024, adjust as needed
+    vec3 incrementalGaussian;
+    incrementalGaussian.x = 1.0f / (sqrt(2.0f * pi) * sigma);
+    incrementalGaussian.y = exp(-0.5f / (sigma * sigma));
+    incrementalGaussian.z = incrementalGaussian.y * incrementalGaussian.y;
 
-    // Calculate the Gaussian kernel
-    float kernel[kernelSize];
-    float sum = 0.0;
-    for (int i = 0; i < kernelSize; i++) {
-        float x = float(i - numBlurPixelsPerSide);
-        kernel[i] = exp(-0.5 * (x * x) / (sigma * sigma)) / (sigma * sqrt(2.0 * pi));
-        sum += kernel[i];
+	vec3 avgValue = vec3(0.0f, 0.0f, 0.0f);
+    float coefficientSum = 0.0f;
+
+	avgValue += imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y)).rgb  * incrementalGaussian.x;
+  	coefficientSum += incrementalGaussian.x;
+    incrementalGaussian.xy *= incrementalGaussian.yz;
+
+    // Horizontal
+    for (float i = 1.0f; i <= numBlurPixelsPerSide; i++) 
+    { 
+        avgValue += imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x - i * blurSize, gl_GlobalInvocationID.y)).rgb * incrementalGaussian.x;
+        avgValue += imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x + i * blurSize, gl_GlobalInvocationID.y)).rgb * incrementalGaussian.x;   
+        coefficientSum += 2 * incrementalGaussian.x;
+        incrementalGaussian.xy *= incrementalGaussian.yz;
     }
 
-    // Normalize the kernel
-    for (int i = 0; i < kernelSize; i++) {
-        kernel[i] /= sum;
+    // Vertical
+    for (float i = 1.0f; i <= numBlurPixelsPerSide; i++) 
+    { 
+        avgValue += imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y - i * blurSize)).rgb * incrementalGaussian.y;
+        avgValue += imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y + i * blurSize)).rgb * incrementalGaussian.y;   
+        coefficientSum += 2 * incrementalGaussian.y;
+        incrementalGaussian.xy *= incrementalGaussian.yz;
     }
 
-    // Apply the Gaussian blur horizontally
-    vec3 avgValue = vec3(0.0);
-    for (int i = -numBlurPixelsPerSide; i <= numBlurPixelsPerSide; i++) {
-        int sampleIndex = index + i;
-        if (sampleIndex >= 0 && sampleIndex < 1024 * 1024) { // Adjust for bounds
-            avgValue += inputBuffer1.data[sampleIndex].rgb * kernel[i + numBlurPixelsPerSide];
-        }
-    }
+    vec4 res =  vec4(avgValue / coefficientSum, 1.0);
 
-    // Apply the Gaussian blur vertically
-    vec3 blurredValue = vec3(0.0);
-    for (int i = -numBlurPixelsPerSide; i <= numBlurPixelsPerSide; i++) {
-        int sampleIndex = index + i * 1024; // Move vertically
-        if (sampleIndex >= 0 && sampleIndex < 1024 * 1024) { // Adjust for bounds
-            blurredValue += avgValue * kernel[i + numBlurPixelsPerSide];
-        }
-    }
-
-    // Write the blurred value to the output buffer
-    outputBuffer.data[index] = vec4(blurredValue, 1.0);
+    imageStore(resultImage, ivec2(gl_GlobalInvocationID.xy), res);
 }

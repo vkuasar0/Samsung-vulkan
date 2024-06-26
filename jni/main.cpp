@@ -578,8 +578,16 @@ void ComputeApplication::runCommandBuffer()
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceCreateInfo.flags = 0;
     VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, NULL, &fence));
+    auto start = std::chrono::high_resolution_clock::now();
     VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, fence));
     VK_CHECK_RESULT(vkWaitForFences(device, 1, &fence, VK_TRUE, 100000000000));
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto int_us = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    std::ofstream of;
+    const char *write_filename = "report_vulkan.csv";
+    of.open(write_filename, std::ios::app);
+    of << int_us.count() << "\n";
+    of.close();
 
     vkDestroyFence(device, fence, NULL);
 }
