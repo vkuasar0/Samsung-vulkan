@@ -1,33 +1,19 @@
 #version 450
 
-layout(set = 0, binding = 0) buffer InputImage1 {
-    vec4 pixels1[];
-};
+layout(local_size_x = 16, local_size_y = 16) in;
 
-layout(set = 0, binding = 1) buffer InputImage2 {
-    vec4 pixels2[];
-};
-
-layout(set = 0, binding = 2) buffer OutputImage {
-    vec4 result[];
-};
-
-layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+layout(binding = 0, rgba8) readonly uniform image2D inputImage1;
+layout(binding = 1, rgba8) readonly uniform image2D inputImage2;
+layout(binding = 2, rgba8) writeonly uniform image2D outputImage;
 
 void main() {
-    ivec2 id = ivec2(gl_GlobalInvocationID.xy);
-    uint width = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
-    uint idx = id.y * width + id.x;
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+    
+    vec4 color1 = imageLoad(inputImage1, pixelCoord);
+    vec4 color2 = imageLoad(inputImage2, pixelCoord);
+    
+    // Blend the two colors (simple average blend)
+    vec4 blendedColor = clamp((color1 + color2) / 2.0, 0.0, 1.0);
 
-    vec4 pixel1 = pixels1[idx];
-    vec4 pixel2 = pixels2[idx];
-
-    // Perform blending operation
-    vec4 blendedPixel;
-    blendedPixel[0] = clamp(pixel1[0] + pixel2[0], 0.0, 255.0);
-    blendedPixel[1] = clamp(pixel1[1] + pixel2[1], 0.0, 255.0);
-    blendedPixel[2] = clamp(pixel1[2] + pixel2[2], 0.0, 255.0);
-    blendedPixel[3] = pixel1[3];
-
-    result[idx] = blendedPixel;
+    imageStore(outputImage, pixelCoord, blendedColor);
 }

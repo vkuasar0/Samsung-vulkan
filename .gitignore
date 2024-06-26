@@ -12,3 +12,4 @@ obj
 vulkan_minimal_compute
 output
 report_vulkan.txt
+result.jpg
