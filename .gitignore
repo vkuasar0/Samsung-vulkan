@@ -13,3 +13,4 @@ vulkan_minimal_compute
 output
 report_vulkan.csv
 result.jpg
+shaders/compute.spv
