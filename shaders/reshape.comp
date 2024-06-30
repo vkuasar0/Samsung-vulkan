@@ -1,0 +1,37 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+layout (binding = 0, rgba8) uniform readonly image2D inputImage;
+layout (binding = 2, rgba8) uniform writeonly image2D outputImage;
+
+const int src_rows = 1009; // Replace with your source image rows
+const int src_cols = 1009; // Replace with your source image columns
+const int dst_rows = 512; // Replace with your destination image rows
+const int dst_cols = 512; // Replace with your destination image columns
+const int src_channels = 4; // Assuming RGBA format
+const int dst_channels = 4; // Assuming RGBA format
+
+void main() {
+    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
+    int gid_x = gid.x;
+    int gid_y = gid.y;
+
+    if (gid_x >= dst_cols || gid_y >= dst_rows) {
+        return;
+    }
+
+    float src_yf = (gid_y + 0.5f) * float(src_rows) / float(dst_rows) - 0.5f;
+    int src_y1 = int(floor(src_yf));
+    int src_y2 = int(ceil(src_yf));
+
+    float y_weight2 = src_yf - float(src_y1);
+    float y_weight1 = 1.0f - y_weight2;
+
+    int src_x = int(float(gid_x) * float(src_cols) / float(dst_cols));
+
+    vec4 src_val1 = imageLoad(inputImage, ivec2(src_x, src_y1));
+    vec4 src_val2 = imageLoad(inputImage, ivec2(src_x, src_y2));
+
+    vec4 result = src_val1 * y_weight1 + src_val2 * y_weight2;
+    imageStore(outputImage, gid, result);
+}

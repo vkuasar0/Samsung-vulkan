@@ -1,0 +1,19 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, r8) readonly uniform image2D grayImage;
+layout(binding = 2, rgba8) writeonly uniform image2D bgrImage;
+
+void main() {
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+    
+    // Load grayscale value
+    vec4 grayPixel = imageLoad(grayImage, pixelCoord);
+
+    // Replicate the grayscale value across the BGR channels
+    vec4 bgrPixel = vec4(grayPixel.r, grayPixel.r, grayPixel.r, 1.0);
+
+    // Store the result in the output image
+    imageStore(bgrImage, pixelCoord, bgrPixel);
+}
