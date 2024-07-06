@@ -1,0 +1,30 @@
+#version 450
+
+layout (binding = 1) uniform sampler2D inputImage;
+layout (binding = 2) uniform writeonly image2D outputImage;
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+void main() {
+    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(outputImage);
+    
+    if (gid.x >= size.x || gid.y >= size.y) {
+        return;
+    }
+
+    vec4 src_pixel = texelFetch(inputImage, gid, 0);
+    float R = src_pixel.r * 255.0;
+    float G = src_pixel.g * 255.0;
+    float B = src_pixel.b * 255.0;
+
+    // Convert RGB to YCbCr
+    float Y = 0.299f * R + 0.587f * G + 0.114f * B;
+    float Cr = (R - Y) * 0.713f + 128.0f;
+    float Cb = (B - Y) * 0.564f + 128.0f;
+
+    // Store the results in the output image
+    vec4 dst_pixel = vec4(clamp(Y / 255.0, 0.0, 1.0), clamp(Cr / 255.0, 0.0, 1.0), clamp(Cb / 255.0, 0.0, 1.0), 1.0);
+
+    imageStore(outputImage, gid, dst_pixel);
+}

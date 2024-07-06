@@ -1,0 +1,28 @@
+#version 450
+
+layout (binding = 1) uniform sampler2D src_img;
+layout (binding = 2) uniform writeonly image2D dst_img;
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+void main() {
+    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(dst_img);
+
+    if (gid.x >= size.x || gid.y >= size.y) {
+        return;
+    }
+
+    vec4 src_pixel = texelFetch(src_img, gid, 0);
+    float Y = src_pixel.r * 255.0;
+    float Cr = src_pixel.g * 255.0 - 128.0;
+    float Cb = src_pixel.b * 255.0 - 128.0;
+
+    float R = Y + 1.403f * Cr;
+    float G = Y - 0.344f * Cb - 0.714f * Cr;
+    float B = Y + 1.773f * Cb;
+
+    vec4 dst_pixel = vec4(clamp(B / 255.0, 0.0, 1.0), clamp(G / 255.0, 0.0, 1.0), clamp(R / 255.0, 0.0, 1.0), 1.0);
+
+    imageStore(dst_img, gid, dst_pixel);
+}

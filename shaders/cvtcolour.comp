@@ -4,6 +4,8 @@ layout(local_size_x = 16, local_size_y = 16) in;
 
 // Define input image (RGB format)
 layout(binding = 0, rgba8) readonly uniform image2D inputImage;
+layout(binding = 1, rgba8) readonly uniform image2D inputImage1;
+
 // Define output image (BGR format)
 layout(binding = 2, rgba8) writeonly uniform image2D outputImage;
 
