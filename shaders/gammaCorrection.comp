@@ -1,0 +1,25 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, rgba8) readonly uniform image2D inputImage;
+layout(binding = 2, rgba8) writeonly uniform image2D outputImage;
+
+void main() {
+    const float gamma = 2;
+    const int width = 1024;
+    const int height = 1024;
+
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+
+    if (pixelCoord.x >= width || pixelCoord.y >= height) return;
+
+    vec4 pixel = imageLoad(inputImage, pixelCoord);
+
+    // Apply gamma correction
+    pixel.r = pow(pixel.r, gamma);
+    pixel.g = pow(pixel.g, gamma);
+    pixel.b = pow(pixel.b, gamma);
+
+    imageStore(outputImage, pixelCoord, pixel);
+}

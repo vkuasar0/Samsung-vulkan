@@ -1,0 +1,29 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, rgba8) readonly uniform image2D img1;
+layout(binding = 1, rgba8) readonly uniform image2D img2;
+layout(binding = 2, rgba8) writeonly uniform image2D outputImage;
+
+const float alpha = 0.5;  // Example alpha value
+const int width = 1024;   // Example width
+const int height = 1024;   // Example height
+
+void main() {
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+
+    if (pixelCoord.x < width && pixelCoord.y < height) {
+        vec4 pixel1 = imageLoad(img1, pixelCoord);
+        vec4 pixel2 = imageLoad(img2, pixelCoord);
+
+        // Perform alpha blending
+        vec4 blendedPixel;
+        blendedPixel.r = alpha * pixel1.r + (1.0 - alpha) * pixel2.r;
+        blendedPixel.g = alpha * pixel1.g + (1.0 - alpha) * pixel2.g;
+        blendedPixel.b = alpha * pixel1.b + (1.0 - alpha) * pixel2.b;
+        blendedPixel.a = 1.0;  // Assuming fully opaque output image
+
+        imageStore(outputImage, pixelCoord, blendedPixel);
+    }
+}

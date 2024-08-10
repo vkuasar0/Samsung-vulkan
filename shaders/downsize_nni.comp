@@ -1,0 +1,42 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, rgba8) readonly uniform image2D inputImage;
+layout(binding = 2, rgba8) writeonly uniform image2D outputImage;
+
+void main() {
+    int inWidth = 784;
+    int inHeight = 784;
+    int outWidth = 512;
+    int outHeight = 512;
+
+    ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.xy);
+    
+    if (pixelCoord.x >= outWidth || pixelCoord.y >= outHeight) return;
+
+    float scaleX = float(inWidth) / float(outWidth);
+    float scaleY = float(inHeight) / float(outHeight);
+
+    float inX = pixelCoord.x * scaleX;
+    float inY = pixelCoord.y * scaleY;
+
+    int x1 = int(inX);
+    int y1 = int(inY);
+    int x2 = min(x1 + 1, inWidth - 1);
+    int y2 = min(y1 + 1, inHeight - 1);
+
+    float dx = inX - x1;
+    float dy = inY - y1;
+
+    vec4 topLeft = imageLoad(inputImage, ivec2(x1, y1));
+    vec4 topRight = imageLoad(inputImage, ivec2(x2, y1));
+    vec4 bottomLeft = imageLoad(inputImage, ivec2(x1, y2));
+    vec4 bottomRight = imageLoad(inputImage, ivec2(x2, y2));
+
+    vec4 top = mix(topLeft, topRight, dx);
+    vec4 bottom = mix(bottomLeft, bottomRight, dx);
+    vec4 pixel = mix(top, bottom, dy);
+
+    imageStore(outputImage, pixelCoord, clamp(pixel, 0.0, 1.0));
+}

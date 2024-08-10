@@ -43,6 +43,7 @@ private:
     VkCommandBuffer commandBuffer;
     VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
+    VkQueryPool queryPool;
     VkDescriptorSetLayout descriptorSetLayout;
     VkImage inImage1;
     VkImage inImage2;
@@ -80,6 +81,9 @@ public:
     void findPhysicalDevice();
     uint32_t getComputeQueueFamilyIndex();
     void createDevice();
+    void createQueryPool();
+    void runCommandBufferWithTiming();
+    void getQueryResults();
     uint32_t findMemoryType(uint32_t memoryTypeBits, VkMemoryPropertyFlags properties);
     void createTextureImage(const char *filename, VkImage &image, VkImageView &imageView, VkDeviceMemory &imageMemory, int &texWidth, int &texHeight, int &texChannels);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory);

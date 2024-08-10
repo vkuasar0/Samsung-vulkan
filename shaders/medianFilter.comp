@@ -1,0 +1,53 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, rgba8) readonly uniform image2D inputImage;
+layout(binding = 2, rgba8) writeonly uniform image2D outputImage;
+
+void main() {
+    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+    int width = imageSize(inputImage).x;
+    int height = imageSize(inputImage).y;
+
+    // Size of the filter window (3x3)
+    const int filter_size = 3;
+    const int filter_half = filter_size / 2;
+
+    // Temporary array to hold the values in the filter window
+    float window[filter_size * filter_size];
+    int count = 0;
+
+    // Iterate over the filter window
+    for (int i = -filter_half; i <= filter_half; i++) {
+        for (int j = -filter_half; j <= filter_half; j++) {
+            // Compute the coordinates of the neighboring pixel
+            ivec2 neighbor_pos = pos + ivec2(i, j);
+
+            // Check for out-of-bound coordinates
+            if (neighbor_pos.x >= 0 && neighbor_pos.x < width && 
+                neighbor_pos.y >= 0 && neighbor_pos.y < height) {
+                window[count++] = imageLoad(inputImage, neighbor_pos).r;
+            } else {
+                // For out-of-bound pixels, add a default value (e.g., 0.0)
+                window[count++] = 0.0;
+            }
+        }
+    }
+
+    // Sort the values in the window array
+    for (int i = 0; i < count - 1; i++) {
+        for (int j = i + 1; j < count; j++) {
+            if (window[i] > window[j]) {
+                float temp = window[i];
+                window[i] = window[j];
+                window[j] = temp;
+            }
+        }
+    }
+
+    // Set the output pixel value to the median of the window
+    vec4 outputColor = vec4(window[count / 2]);
+    outputColor.a = 1.0; // Ensure the alpha channel is set to 1.0
+    imageStore(outputImage, pos, outputColor);
+}

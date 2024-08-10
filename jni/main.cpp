@@ -1,6 +1,31 @@
 #include "main.hpp"
-void ComputeApplication::run()
-{
+#include <chrono>
+#include <functional>
+#include <fstream>
+#include <string>
+
+double measure_time(std::function<void()> func) {
+    auto start = std::chrono::high_resolution_clock::now();
+    func();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::micro> duration = end - start; // measure duration in microseconds
+    return duration.count();
+}
+
+void log_times(const std::string& operation_name, std::function<void()> func, int iterations) {
+    std::string filename = "report_vulkan.csv";
+    std::ofstream of(filename, std::ios::app);
+    double totalTime = 0.0;
+    for (int i = 0; i < iterations; ++i) {
+        double time = measure_time(func);
+        totalTime += time;
+        of << time << "\n";
+    }
+    of << "AVERAGE TIME: " << totalTime / iterations << " microseconds\n";
+    of.close();
+}
+
+void ComputeApplication::run() {
     createInstance();
     findPhysicalDevice();
     createDevice();
@@ -9,10 +34,11 @@ void ComputeApplication::run()
     createDescriptorSet();
     createComputePipeline();
     createCommandBuffer();
-    runCommandBuffer();
-
+    
+    const int iterations = 100;
+    log_times("vulkan_compute", std::bind(&ComputeApplication::runCommandBuffer, this), iterations);
+    
     saveRenderedImage();
-
     cleanup();
 }
 
