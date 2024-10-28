@@ -1,0 +1,54 @@
+#version 450
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(binding = 0, rgba8) readonly uniform image2D inputImage;
+layout(binding = 2, rgba8) writeonly uniform image2D outputImage;
+
+float cubic(float v) {
+    float A = -0.5;
+    return (v < 0.0) ? ((A + 2.0) * v * v * v - (A + 3.0) * v * v + 1.0) :
+                       (A * v * v * v - 5.0 * A * v * v + 8.0 * A * v - 4.0 * A);
+}
+
+vec4 bicubicInterpolate(ivec2 pos, vec2 frac) {
+    vec4 result = vec4(0.0);
+    vec4 rowWeights[4];
+    vec4 colWeights[4];
+    ivec2 size = imageSize(inputImage);
+
+    for (int i = -1; i <= 2; ++i) {
+        rowWeights[i + 1] = vec4(cubic(frac.y - float(i)));
+        colWeights[i + 1] = vec4(cubic(frac.x - float(i)));
+    }
+
+    for (int y = -1; y <= 2; ++y) {
+        for (int x = -1; x <= 2; ++x) {
+            int py = clamp(pos.y + y, 0, size.y - 1);
+            int px = clamp(pos.x + x, 0, size.x - 1);
+            vec4 pixel = imageLoad(inputImage, ivec2(px, py));
+            result += pixel * rowWeights[y + 1].x * colWeights[x + 1].x;
+        }
+    }
+
+    return result;
+}
+
+void main() {
+    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 inputSize = imageSize(inputImage);
+    ivec2 outputSize = imageSize(outputImage);
+
+    vec2 scale = vec2(float(inputSize.x) / float(outputSize.x),
+                      float(inputSize.y) / float(outputSize.y));
+
+    vec2 pos = vec2(float(gid.x) + 0.5f) * scale - 0.5f;
+    ivec2 pos_int = ivec2(floor(pos));
+    vec2 pos_frac = pos - vec2(pos_int);
+
+    vec4 outputColor = bicubicInterpolate(pos_int, pos_frac);
+    outputColor = clamp(outputColor, 0.0, 1.0); // Ensure values are clamped between 0 and 1
+    outputColor.a = 1.0; // Ensure alpha is set to 1.0
+
+    imageStore(outputImage, gid, outputColor);
+}
